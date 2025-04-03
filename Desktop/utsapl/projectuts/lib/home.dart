@@ -10,7 +10,7 @@ class Home extends StatelessWidget {
         child: TextButton(
           style: TextButton.styleFrom(
             foregroundColor: Colors.black,
-            backgroundColor: Colors.green,
+            backgroundColor: Colors.blue,
           ),
           onPressed: () {
             Navigator.pushReplacementNamed(context, '/quiz');
