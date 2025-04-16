@@ -1,52 +1,34 @@
-const express =  require("express")
-const OpenAI = require("openai")
-const dotenv =  require("dotenv")
+const express = require("express");
+const dotenv = require("dotenv");
+const axios = require("axios");
 
 dotenv.config();
 
 const router = express.Router();
 
-
-const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY,
-});
-
 router.post("/analyze-food", async (req, res) => {
-  const { foodInput } = req.body;
-
-  if (!foodInput) {
-    return res.status(400).json({ message: "Food input is required" });
-  }
-
-  const prompt = `
-    Analyze the following food items for total nutrition:
-    "${foodInput}"
-    Return estimated total calories, carbs (g), protein (g), fat (g).
-    Format like:
-    - Calories: 
-    - Carbs: 
-    - Protein: 
-    - Fat:
-  `;
+  const { food } = req.body;
+  console.log("API KEY:", process.env.SPOONACULAR_API_KEY); // Just for sanity
 
   try {
-    const response = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",  // You can also use gpt-4 if needed
-      messages: [
-        { role: "system", content: "You are a nutritionist." },
-        { role: "user", content: prompt }
-      ],
-      temperature: 0.6,
-      max_tokens: 200,
+    const response = await axios.get("https://api.spoonacular.com/recipes/guessNutrition", {
+      params: {
+        title: food,
+        apiKey: process.env.SPOONACULAR_API_KEY,
+      },
     });
 
-    const result = response.choices[0].message.content.trim();
-    res.status(200).json({ result });
+    const foodNutritionInfo = response.data;
 
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Failed to analyze food input." });
+    res.status(200).json({
+      nutrition_info: foodNutritionInfo,
+    });
+  } catch (error) {
+    console.error(error.response?.data || error);
+    res.status(500).json({
+      message: "internal server error",
+    });
   }
 });
 
-module.exports = router
+module.exports = router;

@@ -8,7 +8,7 @@ console.log(route)
 
 <template>
   <div class="min-h-screen">
-    <Navbar v-if="route!== '/register'" ></Navbar>
+    <Navbar v-if="route!== '/register' && route !== '/login'" ></Navbar>
     <RouterView />
   </div>
 </template>
