@@ -1,9 +1,11 @@
+<!-- Jangan lupa download npm install primeicons -->
+
+
 <script setup>
 import { RouterLink } from 'vue-router';
 import { useTypingText } from '@/composables/useTypingText';
 import { ref, onMounted, onUnmounted } from 'vue';
 import 'primeicons/primeicons.css';
-import AICamera from '@/controllers/aiCamera';
 const desc1 = useTypingText("Monitor your posture during workouts using AI Camera for more precise and effective results.");
 const desc2 = useTypingText("Get automatic alerts for incorrect movements, preventing injury risks during your exercise routine.");
 const desc3 = useTypingText("AI technology helps improve your workout form automatically by analyzing camera movement data.");
@@ -17,7 +19,6 @@ const showScrollTop = ref(false);
 const videoElement = ref(null);
 const isCameraOn = ref(false);  // Declare camera state
 let mediaStream = null;  // Declare media stream to control camera
-let aiCamera = null;
 
 
 const handleScroll = () => {
@@ -46,19 +47,12 @@ const toggleCamera = async () => {
     }
     videoElement.value.srcObject = null;
     isCameraOn.value = false;
-  }else {
-    // Start camera
+  } else {
+    // Nyalakan kamera
     try {
       mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
       videoElement.value.srcObject = mediaStream;
       isCameraOn.value = true;
-
-      // Wait a bit for the video to initialize
-      setTimeout(() => {
-        aiCamera = new AICamera(videoElement.value);
-        aiCamera.start();
-      }, 500);
-
     } catch (error) {
       console.error('Error accessing camera:', error);
       alert('Failed to access camera. Please allow camera access.');
@@ -75,12 +69,11 @@ const toggleCamera = async () => {
         <h1 class="text-3xl font-bold mb-4">{{ title }}</h1>
         <p class="text-md mb-5">{{ title2 }}</p>
         <div class="bg-green-600 p-2 rounded-md hover:bg-green-400 inline-block">
-            <button @click="toggleCamera" class="text-white font-semibold">
-                {{ isCameraOn ? '>> Stop Ai Camera <<' : '>> Open Ai Camera <<' }}
-            </button>
-            <video ref="videoElement" autoplay playsinline
-                class="mx-auto my-6 w-full max-w-lg rounded-lg shadow-lg">
-            </video>
+          <button @click="toggleCamera" class="text-white font-semibold">
+            {{ isCameraOn ? '>> Stop Ai Camera <<' : '>> Open Ai Camera <<' }}
+          </button>
+          <video ref="videoElement" autoplay playsinline
+            class="mx-auto my-6 w-full max-w-lg rounded-lg shadow-lg"></video>
         </div>
       </div>
     </div>
@@ -228,7 +221,7 @@ const toggleCamera = async () => {
 
 
           <!-- Tombol Learn More (Nutrition) -->
-          <RouterLink to="/home"
+          <RouterLink to="/"
             class="absolute bottom-10 right-10 bg-opacity-10 px-5 py-2 rounded-lg text-2xl text-white italic font-bold hover:underline hover:bg-opacity-20 transition duration-300 text-center">
             Diet Page >
           </RouterLink>

@@ -21,6 +21,43 @@ router.get("/",async (req,res) => {
     }
 })
 
+router.get("/user-data", async (req, res) => {
+    const authHeader = req.headers['authorization']
+
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+        return res.status(401).json({
+            message: "Unauthorized user"
+        })
+    }
+
+    const token = authHeader.split(" ")[1]
+
+    try {
+        const verified = jwt.verify(token, process.env.JWT_SECRET)
+        const user = await users.findByPk(verified.id)
+
+        if (!user) {
+            return res.status(404).json({ message: "User not found" })
+        }
+
+        return res.status(200).json({
+            success: true,
+            user: {
+                name: user.name,
+                goal: user.goal,
+                height: user.height_cm,
+                weight: user.weight_kg,
+                gender: user.gender,
+                birthdate : user.birthdate,
+                activity: user.daily_activity_category,
+            }
+        })
+    } catch (err) {
+        console.error("JWT verify error:", err)
+        return res.status(401).json({ message: "Invalid or expired token" })
+    }
+})
+
 router.post("/register", async (req,res) => {
     try {
         const {name,email,birthdate,password,height_cm,weight_kg,gender,goal,daily_activity_category} = req.body

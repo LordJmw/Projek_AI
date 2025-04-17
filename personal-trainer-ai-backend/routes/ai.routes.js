@@ -20,7 +20,6 @@ router.post("/analyze-food", async (req, res) => {
       "gluten-free"
     ];
 
-    // Step 1: Hugging Face AI classification
     const hfResponse = await axios.post(
       "https://api-inference.huggingface.co/models/facebook/bart-large-mnli",
       {
@@ -42,7 +41,6 @@ router.post("/analyze-food", async (req, res) => {
       .filter(item => item.score > 0.6)
       .map(item => item.label);
 
-    // Step 2: Adjust filters based on tags
     let diet = "";
     let excludeIngredients = [];
 
@@ -54,7 +52,6 @@ router.post("/analyze-food", async (req, res) => {
       excludeIngredients.push("milk", "yogurt", "cheese", "cream");
     }
 
-    // Step 3: Spoonacular recipe recommendation
     const spoonResponse = await axios.get("https://api.spoonacular.com/recipes/complexSearch", {
       params: {
         query: food,
@@ -99,28 +96,36 @@ router.post("/analyze-food", async (req, res) => {
   }
 });
 
-// router.post("/analyze-food", async (req, res) => {
-//   const { food } = req.body;
+router.post("/analyze-pushup", async (req, res) => {
+  const { keypoints } = req.body; // keypoints dari frontend / mediapipe
 
-//   try {
-//     const response = await axios.get("https://api.spoonacular.com/recipes/guessNutrition", {
-//       params: {
-//         title: food,
-//         apiKey: process.env.SPOONACULAR_API_KEY,
-//       },
-//     });
+  if (!keypoints) {
+    return res.status(400).json({ message: "Missing keypoints data" });
+  }
 
-//     const foodNutritionInfo = response.data;
+  // Di sini nanti kamu bisa analisis postur berdasarkan keypoints dari MediaPipe
+  // Dummy response
+  res.status(200).json({
+    message: "Push-up form analyzed successfully",
+    isProperForm: true,
+    tips: "Keep your back straight!",
+  });
+});
 
-//     res.status(200).json({
-//       nutrition_info: foodNutritionInfo,
-//     });
-//   } catch (error) {
-//     console.error(error.response?.data || error);
-//     res.status(500).json({
-//       message: "internal server error",
-//     });
-//   }
-// });
+// === Dummy Analyze Squat Form ===
+router.post("/analyze-squat", async (req, res) => {
+  const { keypoints } = req.body;
+
+  if (!keypoints) {
+    return res.status(400).json({ message: "Missing keypoints data" });
+  }
+
+  res.status(200).json({
+    message: "Squat form analyzed successfully",
+    isProperForm: false,
+    tips: "Lower your hips more!",
+  });
+});
+
 
 module.exports = router;

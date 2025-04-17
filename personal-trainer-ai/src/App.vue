@@ -2,13 +2,12 @@
 import { useRoute, RouterLink, RouterView } from 'vue-router'
 import Navbar from './components/Navbar.vue';
 
-const route = useRoute().path
-console.log(route)
+const route = useRoute()
 </script>
 
 <template>
   <div class="min-h-screen">
-    <Navbar v-if="route!== '/register' && route !== '/login'" ></Navbar>
+    <Navbar v-if="route.path!== '/' && route !== '/login'" ></Navbar>
     <RouterView />
   </div>
 </template>

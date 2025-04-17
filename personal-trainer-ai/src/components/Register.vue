@@ -66,7 +66,7 @@ const Register = async () => {
         const response = await api.post("/users/register", payload)
         if(response.data.success){
             Toast.success("User Registered Successfully")
-            router.push("/login")
+            router.replace("/login")
         }
     } catch (error) {
         Toast.error("Failed To Register User")

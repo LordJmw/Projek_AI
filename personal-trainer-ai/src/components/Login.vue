@@ -4,7 +4,7 @@ import {Listbox,ListboxButton,ListboxOptions,ListboxOption} from '@headlessui/vu
 import axios from 'axios';
 import api from '@/services/api';
 import {useToast} from "vue-toastification"
-import { useRouter } from 'vue-router';
+import { useRouter,useRoute } from 'vue-router';
 import {EyeIcon,EyeSlashIcon} from "@heroicons/vue/24/solid"
 
 const router = useRouter()
@@ -28,8 +28,9 @@ const Login = async () => {
     try {
         const response = await api.post("/users/login", payload)
         if(response.data.success){
+            localStorage.setItem("token",response.data.token)
             Toast.success("Login Successfully")
-            router.push("/")
+            router.replace("/home")
         }
     } catch (error) {
         Toast.error("Failed To Login")

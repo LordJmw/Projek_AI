@@ -1,13 +1,17 @@
 <script setup>
-import { ref } from 'vue'
+import { ref,onMounted } from 'vue'
 import Profile from '@/components/DietPageComponents/profile.vue'
 import TextTyping from '@/components/DietPageComponents/text_typing.vue'
 import notificationF from '@/components/DietPageComponents/notification_false.vue'
 import search from  '@/components/DietPageComponents/search.vue'
 import calender from '@/components/DietPageComponents/calender.vue'
 import ChatAi from '@/components/DietPageComponents/chat_ai.vue'
+import api from '@/services/api'
+import axios from 'axios'
 
 const showDropdown = ref(false)
+let tee = ref(0)
+let userData = ref(null)
 
 const toggleDropdown = () => {
   showDropdown.value = !showDropdown.value
@@ -16,6 +20,63 @@ const toggleDropdown = () => {
 const closeDropdown = () => {
   showDropdown.value = false
 }
+
+const getActivityMultiplier = (activityLevel) => {
+  switch (activityLevel) {
+    case 'Little/No Activity': return 1.2
+    case 'A Little Active': return 1.375
+    case 'Moderately Active': return 1.55
+    case 'Very Active': return 1.725
+    default: return 1.2
+  }
+}
+
+const calculateTDEE = (user) => {
+  const today = new Date()
+  const birthDate = new Date(user.birthdate)
+  const age = today.getFullYear() - birthDate.getFullYear()
+
+  const weight = user.weight
+  const height = user.height
+  const gender = user.gender
+  const activity = getActivityMultiplier(user.daily_activity_category)
+  const goal = user.goal
+
+  console.log(birthDate,age,weight,height,gender,activity,goal)
+
+  let bmr = 0
+  if (gender === 'm') {
+    bmr = 10 * weight + 6.25 * height - 5 * age + 5
+  } else {
+    bmr = 10 * weight + 6.25 * height - 5 * age - 161
+  }
+
+  if(goal == "cut"){
+    return Math.round(bmr*activity - 500)
+  }
+  else if(goal == "bulk"){
+    return Math.round(bmr*activity + 500)
+  }
+  return Math.round(bmr * activity)
+}
+
+onMounted(async () => {
+    const token = localStorage.getItem('token')
+    console.log(token)
+    try {
+        const res = await api.get('/users/user-data', {
+        headers: {
+            Authorization: `Bearer ${token}`
+        }
+        })
+        userData.value = res.data.user
+        tee.value = calculateTDEE(userData.value)
+        console.log(tee.value,userData.value)
+    } catch (err) {
+        console.error("Error fetching user data:", err)
+    }
+})
+
 </script>
 
 <template>
@@ -63,7 +124,7 @@ const closeDropdown = () => {
                 <div class="text-xs">Konsumsi Kalori</div>
                 </div>
                 <div class="flex flex-col items-end">
-                <div class="text-lg font-bold">2700</div>
+                <div class="text-lg font-bold">{{ tee }}</div>
                 <div class="absolute bottom-2 right-5 text-sm">0</div>
                 </div>
             </div>
