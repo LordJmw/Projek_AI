@@ -3,6 +3,8 @@ import HomeView from '../views/HomeView.vue'
 import NotFoundView from '@/views/NotFoundView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import LoginView from '@/views/LoginView.vue'
+import DietView from '@/components/DietView.vue'
+import WorkoutView from '@/views/workoutView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -15,7 +17,12 @@ const router = createRouter({
     {
       path: '/diet',
       name: 'diet page',
-      component: () => import('../views/DietPage.vue'),
+      component: () => DietView
+    },
+    {
+      path : '/workout',
+      name : "workout page",
+      component : WorkoutView
     },
     {
       path : '/register',
