@@ -1,0 +1,17 @@
+@import 'tailwindcss';
+
+/* Di bagian style atau tailwind config */
+button[disabled] {
+    opacity: 0.5;
+    cursor: not-allowed;
+    }
+
+.notification-enter-active,
+.notification-leave-active {
+  transition: all 0.3s ease;
+}
+.notification-enter-from,
+.notification-leave-to {
+  opacity: 0;
+  transform: translateX(100%);
+}
