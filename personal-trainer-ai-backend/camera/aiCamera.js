@@ -1,39 +1,54 @@
-// src/controller/aiCamera.js
-import * as cam from '@mediapipe/camera_utils';
-import * as mpPose from '@mediapipe/pose';
+import * as tf from '@tensorflow/tfjs';
+import * as posedetection from '@tensorflow-models/pose-detection';
+import '@tensorflow/tfjs-backend-webgl';
 import axios from 'axios';
 
 export default class AICamera {
   constructor(videoElement) {
     this.videoElement = videoElement;
-    this.pose = new mpPose.Pose({
-      locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose@${mpPose.VERSION}/${file}`,
-    });
-    this.pose.onResults(this.onResults.bind(this));
+    this.detector = null;
+    this.running = false;
   }
 
-  start() {
-    const camera = new cam.Camera(this.videoElement, {
-      onFrame: async () => {
-        await this.pose.send({ image: this.videoElement });
-      },
-      width: 640,
-      height: 480,
+  async init() {
+    await tf.setBackend('webgl');
+    await tf.ready();
+
+    this.detector = await posedetection.createDetector(posedetection.SupportedModels.MoveNet, {
+      modelType: posedetection.movenet.modelType.SINGLEPOSE_LIGHTNING,
     });
-    camera.start();
+
+    this.running = true;
+    this.detectPose();
   }
 
-  onResults(results) {
-    if (results.poseLandmarks) {
-      const keypoints = results.poseLandmarks.map(landmark => ({
-        x: landmark.x,
-        y: landmark.y,
-        z: landmark.z,
-        visibility: landmark.visibility,
-      }));
-      
-      this.sendKeypointsToBackend(keypoints);
-    }
+  async detectPose() {
+    const detect = async () => {
+      if (!this.running || !this.detector) return;
+
+      const poses = await this.detector.estimatePoses(this.videoElement, {
+        maxPoses: 1,
+        flipHorizontal: false
+      });
+
+      if (poses && poses.length > 0) {
+        const keypoints = poses[0].keypoints.map(kp => ({
+          x: kp.x,
+          y: kp.y,
+          score: kp.score
+        }));
+
+        this.sendKeypointsToBackend(keypoints);
+      }
+
+      requestAnimationFrame(detect);
+    };
+
+    detect();
+  }
+
+  stop() {
+    this.running = false;
   }
 
   async sendKeypointsToBackend(keypoints) {
@@ -41,7 +56,7 @@ export default class AICamera {
       const response = await axios.post('http://localhost:3000/ai/analyze-squat', { keypoints });
       console.log(response.data);
     } catch (error) {
-      console.error("Error sending keypoints:", error);
+      console.error('Error sending keypoints:', error);
     }
   }
 }

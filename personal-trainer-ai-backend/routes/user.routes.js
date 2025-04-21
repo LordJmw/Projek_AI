@@ -2,6 +2,7 @@ const express = require("express")
 const router = express.Router()
 const jwt = require("jsonwebtoken")
 const {users} = require("./../models/users.models")
+const {meals} = require("./../models/meals.models")
 
 const bcrypt = require("bcrypt")
 
@@ -21,9 +22,32 @@ router.get("/",async (req,res) => {
     }
 })
 
+router.post('/valid-token',async (req,res) => {
+    const {token} = req.body
+    if(!token){
+        return res.status(401).json({
+            status : 401,
+            message : "unauthorized"
+        })
+    }
+
+    try {
+        const valid = jwt.verify(token,process.env.JWT_SECRET)
+
+        return res.status(201).json({
+            status : 201,
+            message : "valid token"
+        })
+    } catch (err) {
+        return res.status(401).json({
+            message : "invalid token"
+        })
+        console.error(err)
+    }
+})
+
 router.get("/user-data", async (req, res) => {
     const authHeader = req.headers['authorization']
-
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
         return res.status(401).json({
             message: "Unauthorized user"
@@ -43,6 +67,7 @@ router.get("/user-data", async (req, res) => {
         return res.status(200).json({
             success: true,
             user: {
+                id : user.id,
                 name: user.name,
                 goal: user.goal,
                 height: user.height_cm,
@@ -55,6 +80,51 @@ router.get("/user-data", async (req, res) => {
     } catch (err) {
         console.error("JWT verify error:", err)
         return res.status(401).json({ message: "Invalid or expired token" })
+    }
+})
+
+router.get("/user-meal/:id", async (req, res) => {
+    const id = req.params.id
+
+    try {
+        const mealsData = await meals.findAll({
+            where: { user_id: id },
+            order: [['createdAt', 'DESC']] 
+        })
+
+        res.status(200).json(mealsData)
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({
+            message: "Internal server error"
+        })
+    }
+})
+
+
+router.post("/user-meal/:id",async (req,res) => {
+    const {calories,fat,protein,carbs,name,meal_type} = req.body
+    const id = req.params.id
+
+    try{
+        await meals.create({
+            user_id : id,
+            name : name,
+            calories,
+            fat,
+            carbs,
+            protein,
+            meal_type
+        })    
+        res.status(201).json({
+            success : true,
+            message : "Data Berhasil Tersimpan"
+        })
+    } catch (error) {
+        console.error(error)
+        res.status(500).json({
+            message : "internal server error"
+        })
     }
 })
 
@@ -128,5 +198,27 @@ router.post("/login",async (req,res) => {
         console.error(error)
     }
 })
+
+router.delete("/user-meal/:userId/:mealId", async (req, res) => {
+    try {
+        await meals.destroy({
+            where: {
+                id: req.params.mealId,
+                user_id: req.params.userId
+            }
+        });
+        
+        res.status(200).json({ 
+            success: true,
+            message: "Meal deleted successfully"
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            success: false,
+            message: "Failed to delete meal"
+        });
+    }
+});
 
 module.exports = router

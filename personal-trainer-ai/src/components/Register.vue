@@ -163,7 +163,14 @@ const ToggleHidePassword = () => {
                     </div>
                 </Listbox>
                 
-                <button class="button bg-green-600 py-2 px-4 rounded-lg hover:bg-green-500 cursor-pointer" type="submit" @click.prevent="Register">Submit</button>
+                <div class="flex items-center justify-between w-full">
+                    <button class="button bg-green-600 py-2 px-4 rounded-lg hover:bg-green-500 cursor-pointer" type="submit" @click.prevent="Register">Submit</button>
+                    <div class="flex flex-col justify-center items-center p-4 transform scale-80">
+                        <p class="text-sm">Already Have an Acount?</p>
+                        <RouterLink to="/login" class="text-lg text-blue-500">Login</RouterLink>
+                    </div>
+                </div>
+                
             </form>     
         </div>
     </div>

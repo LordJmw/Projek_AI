@@ -11,7 +11,7 @@
   import { ref, onMounted } from 'vue';
   
   const dynamicText = ref(null);
-  const words = ["Nggak ada magic, yang ada disiplin.", "Yang penting mulai, bukan nunggu niat.", "Disiplin ngalahin motivasi.", "Nggak ada shortcut buat badan ideal."];
+  const words = ["No Magic, Only Disclipine.", "Just do it, no excuses.", "Discipline beats motivation.", "No shortcut for your ideal body."];
   let wordIndex = 0;
   let charIndex = 0;
   let isDeleting = false;

@@ -26,18 +26,18 @@
       
       <!-- tampil jika isOpen true, hidden jika tidak untuk ada menu hamburger -->
        <!-- u/ class biasa, posisi absolut, untuk screen medium digunakan flex, widthnya full -->
-      <ul :class="{'block': isOpen, 'hidden': !isOpen}" 
+        <ul :class="{'block': isOpen, 'hidden': !isOpen}" 
           class="absolute md:relative md:flex bg-green-600 md:bg-transparent w-full left-0 md:w-auto top-16 md:top-0 text-white space-y-4 md:space-y-0 md:space-x-6 p-4 md:p-0">
-          <li :class='[isActiveLink("/home")? "bg-[#3B7D3F]" : "", "hover:bg-[#3B7D3F]/90", "rounded-md"]'>
-          <RouterLink to="/home"  class="px-4 py-2 block no-underline text-black font-semibold tracking-wide" style="text-decoration: none;">Home</RouterLink>
-        </li>
-        <li :class='[isActiveLink("/diet")? "bg-[#3B7D3F]" : "", "hover:bg-[#3B7D3F]/90", "rounded-md"]'>
-          <RouterLink to="/diet"  class="px-4 py-2 block no-underline text-black font-semibold tracking-wide" style="text-decoration: none;">My Diet</RouterLink>
-        </li>
-        <li :class='[isActiveLink("/workout")? "bg-[#3B7D3F]" : "", "hover:bg-[#3B7D3F]/90", "rounded-md"]'>
-          <RouterLink to="/workout" class="px-4 py-2 block no-underline text-black font-semibold tracking-wide" style="text-decoration: none;">Workout</RouterLink>
-        </li>
-      </ul>
+            <li :class='[isActiveLink("/home")? "bg-[#3B7D3F]" : "", "hover:bg-[#3B7D3F]/90", "rounded-md"]'>
+            <RouterLink to="/home"  class="px-4 py-2 block no-underline text-black font-semibold tracking-wide" style="text-decoration: none;">Home</RouterLink>
+          </li>
+          <li :class='[isActiveLink("/diet")? "bg-[#3B7D3F]" : "", "hover:bg-[#3B7D3F]/90", "rounded-md"]'>
+            <RouterLink to="/diet"  class="px-4 py-2 block no-underline text-black font-semibold tracking-wide" style="text-decoration: none;">My Diet</RouterLink>
+          </li>
+          <li :class='[isActiveLink("/workout")? "bg-[#3B7D3F]" : "", "hover:bg-[#3B7D3F]/90", "rounded-md"]'>
+            <RouterLink to="/workout" class="px-4 py-2 block no-underline text-black font-semibold tracking-wide" style="text-decoration: none;">Workout</RouterLink>
+          </li>
+        </ul>
     </div>
   </nav>
 </template>

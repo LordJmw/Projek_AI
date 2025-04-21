@@ -31,35 +31,42 @@ router.post("/analyze-food", async (req, res) => {
   }
 });
 
-router.post("/analyze-pushup", async (req, res) => {
-  const { keypoints } = req.body; // keypoints dari frontend / mediapipe
+app.post('/pose-data', (req, res) => {
+  const { landmarks } = req.body;
 
-  if (!keypoints) {
-    return res.status(400).json({ message: "Missing keypoints data" });
-  }
+  // Here, you would process the landmarks to determine exercises (e.g., squat, push-up)
+  const status = analyzePose(landmarks);
 
-  // Di sini nanti kamu bisa analisis postur berdasarkan keypoints dari MediaPipe
-  // Dummy response
-  res.status(200).json({
-    message: "Push-up form analyzed successfully",
-    isProperForm: true,
-    tips: "Keep your back straight!",
-  });
+  // Respond with the exercise status
+  res.json({ status });
 });
 
-// === Dummy Analyze Squat Form ===
-router.post("/analyze-squat", async (req, res) => {
-  const { keypoints } = req.body;
+// Function to analyze pose (simplified example)
+function analyzePose(landmarks) {
+  // You would need to write specific logic to detect squats, push-ups, etc.
+  // For example, check the angle between the knees to detect squats
+  const squatDetected = checkSquat(landmarks);
+  const pushUpDetected = checkPushUp(landmarks);
 
-  if (!keypoints) {
-    return res.status(400).json({ message: "Missing keypoints data" });
+  if (squatDetected) {
+    return 'Squat detected';
+  } else if (pushUpDetected) {
+    return 'Push-up detected';
   }
 
-  res.status(200).json({
-    message: "Squat form analyzed successfully",
-    isProperForm: false,
-    tips: "Lower your hips more!",
-  });
-});
+  return 'No exercise detected';
+}
+
+// Dummy functions for squat and push-up detection
+function checkSquat(landmarks) {
+  // Logic to detect squat based on joint positions
+  return false;
+}
+
+function checkPushUp(landmarks) {
+  // Logic to detect push-up based on joint positions
+  return false;
+}
+
 
 module.exports = router;

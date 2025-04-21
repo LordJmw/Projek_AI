@@ -46,6 +46,7 @@ const ToggleHidePassword = () => {
 <template>
     <div class="flex items-center justify-center min-h-screen bg-gray-200 overflow-auto py-10">
         <div class="bg-white w-[90%] md:w-[40%]  p-4">
+            <p class="text-bold text-xl mb-8">LOGIN</p>
             <form>
                 <label for="Email" class="block mb-2 text-sm">Email</label>
                 <input type="email" class="w-full mb-4 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none  focus:border-black focus:ring-black-500" 

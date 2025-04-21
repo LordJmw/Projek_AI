@@ -1,9 +1,9 @@
 <script setup>
 import { RouterLink } from 'vue-router';
 import { useTypingText } from '@/composables/useTypingText';
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, onUnmounted,nextTick } from 'vue';
 import 'primeicons/primeicons.css';
-import AICamera from '@/controllers/aiCamera';
+// import AICamera from '@/controllers/aiCamera';
 const desc1 = useTypingText("Monitor your posture during workouts using AI Camera for more precise and effective results.");
 const desc2 = useTypingText("Get automatic alerts for incorrect movements, preventing injury risks during your exercise routine.");
 const desc3 = useTypingText("AI technology helps improve your workout form automatically by analyzing camera movement data.");
@@ -16,8 +16,71 @@ const title2 = useTypingText("Open Camera to Check your workout Form");
 const showScrollTop = ref(false);
 const videoElement = ref(null);
 const isCameraOn = ref(false);  // Declare camera state
-let mediaStream = null;  // Declare media stream to control camera
-let aiCamera = null;
+let aiCamera = ref(null);
+const analysisResult = ref(null);
+const selectedExercise = ref('squat'); // Default exercise
+
+const toggleCamera = async () => {
+  if (isCameraOn.value) {
+    stopCamera();
+  } else {
+    await startCamera();
+  }
+  isCameraOn.value = !isCameraOn.value;
+};
+
+const startCamera = async () => {
+  try {
+    await nextTick(); // Ensure DOM is updated
+    console.log("Video ref value:", videoElement.value);
+    console.log("Instance of HTMLVideoElement:", videoElement.value instanceof HTMLVideoElement);
+
+    // Ensure that the video element is correctly passed
+    const video = videoElement.value;
+    if (!video || !(video instanceof HTMLVideoElement)) {
+      throw new Error("Video element is not a valid HTMLVideoElement");
+    }
+
+    // Set up AI Camera
+    aiCamera.value = new AICamera(video, analyzePose);
+    await aiCamera.value.start();
+    analysisResult.value = null;
+  } catch (error) {
+    console.error('Error starting camera:', error);
+    isCameraOn.value = false;
+  }
+};
+const stopCamera = () => {
+  if (aiCamera.value) {
+    aiCamera.value.stop();
+    aiCamera.value = null;
+  }
+};
+
+const analyzePose = async (keypoints) => {
+  try {
+    // Use selected exercise (either 'pushup' or 'squat') to send to the correct backend endpoint
+    const endpoint = selectedExercise.value === 'pushup' 
+      ? '/analyze-pushup' 
+      : '/analyze-squat';
+    
+    const response = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ keypoints }),
+    });
+    
+    const data = await response.json();
+    analysisResult.value = data;
+  } catch (error) {
+    console.error('Error analyzing pose:', error);
+  }
+};
+onUnmounted(() => {
+  stopCamera();
+});
 
 
 const handleScroll = () => {
@@ -32,40 +95,6 @@ onMounted(() => {
   window.addEventListener('scroll', handleScroll)
 })
 
-onUnmounted(() => {
-  window.removeEventListener('scroll', handleScroll)
-})
-
-
-const toggleCamera = async () => {
-  if (isCameraOn.value) {
-    // Matikan kamera
-    const tracks = mediaStream?.getTracks();
-    if (tracks) {
-      tracks.forEach(track => track.stop());
-    }
-    videoElement.value.srcObject = null;
-    isCameraOn.value = false;
-  }else {
-    // Start camera
-    try {
-      mediaStream = await navigator.mediaDevices.getUserMedia({ video: true });
-      videoElement.value.srcObject = mediaStream;
-      isCameraOn.value = true;
-
-      // Wait a bit for the video to initialize
-      setTimeout(() => {
-        aiCamera = new AICamera(videoElement.value);
-        aiCamera.start();
-      }, 500);
-
-    } catch (error) {
-      console.error('Error accessing camera:', error);
-      alert('Failed to access camera. Please allow camera access.');
-    }
-  }
-};
-
 </script>
 
 <template>
@@ -74,14 +103,17 @@ const toggleCamera = async () => {
       <div class="bg-black bg-opacity-60 p-6 rounded-xl max-w-xl">
         <h1 class="text-3xl font-bold mb-4">{{ title }}</h1>
         <p class="text-md mb-5">{{ title2 }}</p>
-        <div class="bg-green-600 p-2 rounded-md hover:bg-green-400 inline-block">
-            <button @click="toggleCamera" class="text-white font-semibold">
-                {{ isCameraOn ? '>> Stop Ai Camera <<' : '>> Open Ai Camera <<' }}
-            </button>
-            <video ref="videoElement" autoplay playsinline
-                class="mx-auto my-6 w-full max-w-lg rounded-lg shadow-lg">
-            </video>
+        <div class="bg-green-600 p-2 rounded-md hover:bg-green-400 inline-block mb-4">
+          <button @click="toggleCamera" class="text-white font-semibold">
+            {{ isCameraOn ? '>> Stop Ai Camera <<' : '>> Open Ai Camera <<' }}
+          </button>
         </div>
+        <video ref="videoElement" autoplay muted playsinline
+          class="mx-auto my-6 w-full max-w-lg rounded-lg shadow-lg">
+          <div v-if="analysisResult">
+            <p>{{ analysisResult.status }}</p> <!-- Show feedback from backend -->
+          </div>
+        </video>
       </div>
     </div>
 
