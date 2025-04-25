@@ -28,7 +28,7 @@ const checkTokenValidity = async () => {
     }
   } catch (error) {
     if (!alreadyRedirected.value) {
-      alreadyRedirected = true
+      alreadyRedirected.value = true
       console.error("Error checking token:", error)
       alert("Session error. Please login again.")
       localStorage.removeItem("token")
@@ -45,7 +45,7 @@ onMounted(() => {
 
 <template>
   <div class="min-h-screen">
-    <Navbar v-if="route.path!== '/' && route !== '/login'"></Navbar>
+    <Navbar v-if="route.path !== '/' && route.path !== '/login'"></Navbar>
     <RouterView />
   </div>
 </template>

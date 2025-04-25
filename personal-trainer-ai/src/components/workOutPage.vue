@@ -1,7 +1,7 @@
 <script setup>
 import { useTypingText } from '@/composables/useTypingText';
 import { ref, onUnmounted } from 'vue';
-import { initCamera, loadModel, detectPose } from '@/controllers/aiCamera';
+import { initCamera, loadModel, detectPose,resetWorkoutState } from '@/controllers/aiCamera';
 
 const title = useTypingText("Check your Workout Form, Avoid Injury");
 const title2 = useTypingText("Open Camera to Check your workout Form");
@@ -48,6 +48,7 @@ const stopCamera = () => {
   if (videoElement.value && videoElement.value.srcObject) {
     videoElement.value.srcObject.getTracks().forEach(track => track.stop());
     videoElement.value.srcObject = null;
+    resetWorkoutState()
   }
   isCameraOn.value = false;
   if (animationFrameId) {
@@ -80,31 +81,17 @@ onUnmounted(() => {
             {{ isCameraOn ? 'Stop Camera' : 'Start Camera' }}
           </button>
         </div>
-        <video ref="videoElement" autoplay playsinline
-          class="mx-auto w-full max-w-lg aspect-video rounded-lg shadow-lg">
-        </video>
-        <p><strong>Detected:</strong> {{ detected }}</p>
-        <p><strong>Squat Count:</strong> {{ squatCount }}</p>
-        <p><strong>Push-up Count:</strong> {{ pushupCount }}</p>
-        <p v-if="feedbackMessage" class="text-yellow-300 mt-2">{{ feedbackMessage }}</p>
-      </div>
-      <!-- <div class="flex flex-col items-center justify-center bg-black bg-opacity-60 p-6 rounded-xl max-w-xl w-full my-2"> 
-        <h1 class="text-3xl font-bold mb-4">{{ title }}</h1>
-        <p class="text-md mb-5">{{ title2 }}</p>
-        <div class="bg-green-600 p-2 rounded-md hover:bg-green-400 inline-block mb-4">
-          <button @click="toggleCamera" class="px-6 py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700">
-            {{ isCameraOn ? 'Stop Camera' : 'Start Camera' }}
-          </button>
-        </div>
-        <video ref="videoElement" autoplay playsinline
-          class="mx-auto my-6 w-full max-w-lg rounded-lg shadow-lg"></video>
-        <div class="mt-6 text-left text-sm text-gray-100 p-4 bg-black bg-opacity-40 rounded-lg">
+        <div v-show="isCameraOn">
+          <video ref="videoElement" autoplay playsinline
+          class="mx-auto w-full max-w-lg aspect-video rounded-lg shadow-lg" >
+          </video>
           <p><strong>Detected:</strong> {{ detected }}</p>
           <p><strong>Squat Count:</strong> {{ squatCount }}</p>
           <p><strong>Push-up Count:</strong> {{ pushupCount }}</p>
           <p v-if="feedbackMessage" class="text-yellow-300 mt-2">{{ feedbackMessage }}</p>
         </div>
-      </div> -->
+        
+      </div>
     </div>
 
 
