@@ -21,25 +21,39 @@ const totalKaloriTerpakai = computed(() => {
 })
 
 const sisaKalori = computed(() => {
-    return tee.value - totalKaloriTerpakai.value
+    let sisa = tee.value - totalKaloriTerpakai.value
+    if(sisa < 0) {
+        return `surplus ${(sisa*-1)} kcal from target ${calculateTDEE(userData.value)}`
+    }
+    return sisa
 })
 
 const hideInputAfterSave = (waktu) => {
     waktu.showInput = false
     waktu.inputValue = '' // Reset input value
+    waktu.warning = ''
 }
 
 
 const waktuMakan = ref([
-    { id: 'breakfast', label: 'Breakfast', icon: '🌅', showInput: false, inputValue: '', meals: [] },
-    { id: 'lunch', label: 'Lunch', icon: '☀️', showInput: false, inputValue: '', meals: [] },
-    { id: 'dinner', label: 'Dinner', icon: '🌙', showInput: false, inputValue: '', meals: [] },
-    { id: 'snack', label: 'Snack/Others', icon: '🍪', showInput: false, inputValue: '', meals: [] },
+    { id: 'breakfast', label: 'Breakfast', icon: '🌅', showInput: false, inputValue: '', meals: [], warning : "" },
+    { id: 'lunch', label: 'Lunch', icon: '☀️', showInput: false, inputValue: '', meals: [], warning : "" },
+    { id: 'dinner', label: 'Dinner', icon: '🌙', showInput: false, inputValue: '', meals: [], warning : "" },
+    { id: 'snack', label: 'Snack/Others', icon: '🍪', showInput: false, inputValue: '', meals: [], warning : "" },
 ])
 
 const toggleInput = (id) => {
     const waktu = waktuMakan.value.find((item) => item.id === id)
-    if (waktu) waktu.showInput = !waktu.showInput
+    if (!waktu) return
+    
+    waktu.warning = ''
+    
+    if (totalKaloriTerpakai.value > calculateTDEE(userData.value)) {
+        waktu.warning = "⚠️ You've exceeded your daily target!"
+        waktu.inputValue = "⚠️ You've exceeded your daily target!"
+    }
+    
+    waktu.showInput = !waktu.showInput
 }
 
 const getActivityMultiplier = (activityLevel) => {
@@ -84,7 +98,6 @@ const currentWaktu = ref(null);
 
 const saveFoodEaten = async (type, meal, waktu) => {
     isLoading.value = true;
-
     try {
         const responseA = await api.post("/ai/analyze-food", { food: meal });
 
@@ -249,12 +262,12 @@ const deleteMeal = async (mealId, mealType) => {
         </header>
         <main class='bg-gray-100 p-5 font-sans'>
             <div class="flex items-center justify-between bg-green-700 p-4 rounded-xl mb-5 relative text-white">
-                <div>
-                    <div class="text-sm font-bold">Calories Left</div>
+                <div v-if="userData">
+                    <div class="text-sm font-bold">Calories Left ({{ userData.goal }})</div>
                     <div class="text-xs">Calories Consumed</div>
                 </div>
                 <div class="flex flex-col items-end">
-                    <div class="text-lg font-bold">{{ sisaKalori }}</div>
+                    <div class="text-lg font-bold mb-1">{{ sisaKalori }}</div>
                     <div class="absolute bottom-2 right-5 text-sm">Total: {{ totalKaloriTerpakai }} kcal</div>
                 </div>
             </div>
@@ -269,7 +282,7 @@ const deleteMeal = async (mealId, mealType) => {
                 </div>
 
                 <div v-for="(meal, index) in waktu.meals" :key="index" class="border-b border-gray-200 pb-2 relative">
-                    <p class="font-semibold">Makanan: {{ meal.name }}</p>
+                    <p class="font-semibold mb-2">Food: {{ meal.name }}</p>
                     <p v-if="meal.calories !== null">Kalori: {{ meal.calories }} kcal</p>
                     <p v-if="meal.protein !== null">Protein: {{ meal.protein }} g</p>
                     <p v-if="meal.carbs !== null">Karbohidrat: {{ meal.carbs }} g</p>
@@ -288,10 +301,14 @@ const deleteMeal = async (mealId, mealType) => {
                     <label class="block text-sm text-gray-700 mb-1">Input Your {{ waktu.label }} (english)</label>
                     <input
                         type="text"
-                        :placeholder="'Masukkan makan ' + waktu.id + '...'"
+                        :placeholder="waktu.warning || `Masukkan makan ${waktu.id}...`"
+                        :value="waktu.inputValue"
                         class="w-full p-2 border border-gray-300 rounded-md mb-2"
+                        :class="{ 'border-red-500': waktu.warning }"
+                        @focus="waktu.inputValue = ''; waktu.warning = ''"
                         v-model="waktu.inputValue"
                     />
+                    <p v-if="waktu.warning" class="text-red-500 text-sm mb-2">{{ waktu.warning }}</p>
                     <button
                         class="w-full py-2 rounded-md text-white bg-green-500 transition-all mt-2"
                         :class="{

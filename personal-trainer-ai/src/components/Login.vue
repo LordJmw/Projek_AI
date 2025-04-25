@@ -20,7 +20,7 @@ const data = reactive({
 
 const Toast = useToast()
 
-const Login = async () => {
+const login = async () => {
     const payload = {
         email : data.userData.email,
         password : data.userData.password,
@@ -72,7 +72,13 @@ const ToggleHidePassword = () => {
                 </button>
                 </div>
 
-                <button class="button bg-green-600 py-2 px-4 rounded-lg hover:bg-green-500 cursor-pointer" type="submit" @click.prevent="Login">Login</button>
+                <div class="flex items-center justify-between w-full">
+                    <button class="button bg-green-600 py-2 px-4 rounded-lg hover:bg-green-500 cursor-pointer" @click.prevent="login">Login</button>
+                    <div class="flex flex-col justify-center items-center p-4 transform scale-80">
+                        <p class="text-sm">Don't Have an Acount?</p>
+                        <RouterLink to="/" class="text-lg text-blue-500">Register</RouterLink>
+                    </div>
+                </div>
             </form>     
         </div>
     </div>

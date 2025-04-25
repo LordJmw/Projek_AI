@@ -2,9 +2,9 @@
     <div class="mt-10">
       <div class="flex justify-between items-center">
         <span class="font-bold text-lg">
-          Need coaching on meals? you can chat me!
+          Need coaching on meals? you can chat me! I'm a meal chatbot!
         </span>
-        <span @click="toggleChat" class="cursor-pointer text-gray-800">
+        <span @click="toggleChat" class="cursor-pointer text-gray-800 underline">
           Click me If you need my help!
         </span>
       </div>
@@ -31,7 +31,7 @@
               type="text"
               v-model="userInput"
               @keyup.enter="sendMessage"
-              placeholder="eg : Tell me food that is around 500 kcal/ Recommend me food for the whole day based on my tee"
+              placeholder="eg : Tell me food that is around 500 kcal/ Recommend me food for the whole day based on my tee (use calories/kcal)"
               class="flex-grow border rounded-l-xl px-4 py-2 focus:outline-none"
             />
             <button
@@ -47,80 +47,119 @@
   </template>
 
 <script setup>
-import { ref, nextTick,onMounted } from 'vue'
+import { ref, nextTick, onMounted } from 'vue'
 import api from '@/services/api'
+
 const showChat = ref(false)
 const userInput = ref('')
 const messages = ref([])
 const chatMessages = ref(null)
+const userData = ref(null)
+const tdee = ref(null) // Changed to null to distinguish from 0
 
-const parseUserInput = (text) => {
-const lower = text.toLowerCase()
-const isDaily = /daily|whole day|recommend/.test(lower)
-const isCalories = /(\d+)\s*(kcal|calories)/.test(lower)
-const user = ref(null)
-const tee = ref(0)
-
-const dietPatterns = ['vegetarian', 'vegan', 'pescatarian', 'keto', 'paleo']
-const excludePatterns = ['lactose', 'dairy', 'nuts', 'gluten']
-
+// Activity level multipliers
+const activityMultipliers = {
+  'sedentary': 1.2,
+  'light': 1.375,
+  'moderate': 1.55,
+  'active': 1.725,
+  'very_active': 1.9
+}
 
 const calculateTDEE = (user) => {
+  if (!user || !user.birthdate || !user.weight || !user.height || !user.gender) {
+    console.error('Missing required user data for TDEE calculation')
+    return null
+  }
+
+  try {
     const today = new Date()
     const birthDate = new Date(user.birthdate)
-    const age = today.getFullYear() - birthDate.getFullYear()
+    let age = today.getFullYear() - birthDate.getFullYear()
+    // Adjust age if birthday hasn't occurred yet this year
+    if (today.getMonth() < birthDate.getMonth() || 
+        (today.getMonth() === birthDate.getMonth() && today.getDate() < birthDate.getDate())) {
+      age--
+    }
 
-    const weight = user.weight
-    const height = user.height
+    const weight = parseFloat(user.weight)
+    const height = parseFloat(user.height)
     const gender = user.gender
-    const activity = getActivityMultiplier(user.daily_activity_category)
-    const goal = user.goal
+    const activityLevel = user.daily_activity_category?.toLowerCase() || 'sedentary'
+    const multiplier = activityMultipliers[activityLevel] || 1.2
+    const goal = user.goal?.toLowerCase()
 
-    let bmr = 0
-    if (gender === 'm') {
-        bmr = 10 * weight + 6.25 * height - 5 * age + 5
-    } else {
-        bmr = 10 * weight + 6.25 * height - 5 * age - 161
-    }
+    // Mifflin-St Jeor Equation
+    let bmr = (10 * weight) + (6.25 * height) - (5 * age)
+    bmr += gender === 'm' ? 5 : -161
 
+    let calculatedTdee = Math.round(bmr * multiplier)
+
+    // Adjust for goals
     if (goal === "cut") {
-        return Math.round(bmr * activity - 500)
+      calculatedTdee -= 500
     } else if (goal === "bulk") {
-        return Math.round(bmr * activity + 500)
+      calculatedTdee += 500
     }
-    return Math.round(bmr * activity)
-}
 
-let diet = ''
-let exclude = []
-
-for (const pattern of dietPatterns) {
-  if (lower.includes(pattern)) {
-    diet = pattern
-    break
+    console.log('Calculated TDEE:', calculatedTdee)
+    return calculatedTdee
+  } catch (error) {
+    console.error('Error calculating TDEE:', error)
+    return null
   }
 }
 
-for (const pattern of excludePatterns) {
-  if (lower.includes(pattern)) {
-    if (pattern === 'lactose' || pattern === 'dairy') {
-      exclude.push('milk', 'cheese', 'yogurt', 'cream', 'butter')
-    } else {
-      exclude.push(pattern)
+const parseUserInput = (text) => {
+  const lower = text.toLowerCase()
+  const isDaily = /daily|whole day|recommend/.test(lower)
+  const isCalories = /(\d+)\s*(kcal|calories)/.test(lower)
+  const isTEE = /tee|tdee|energy expenditure|maintenance calories|my calories/i.test(lower)
+
+  const dietPatterns = ['vegetarian', 'vegan', 'pescatarian', 'keto', 'paleo','high-protein']
+  const excludePatterns = ['lactose', 'dairy', 'nuts', 'nut', 'seafood', 'fish', 'shrimp' , 'gluten']
+
+  let diet = ''
+  let exclude = []
+
+  for (const pattern of dietPatterns) {
+    if (lower.includes(pattern)) {
+      diet = pattern
+      break
     }
   }
-}
 
-const calorieMatch = lower.match(/(\d+)\s*(?:kcal|calories)/)
-const targetCalories = calorieMatch ? parseInt(calorieMatch[1]) : null
+  for (const pattern of excludePatterns) {
+    if (lower.includes(pattern)) {
+      if (pattern === 'lactose' || pattern === 'dairy') {
+        exclude.push('milk', 'cheese', 'yogurt', 'cream', 'butter')
+      } 
+      else if (pattern === 'seafood') {
+        exclude.push('fish', 'shrimp', 'crab', 'lobster', 'clams', 'oyster', 'scallop', 'anchovy', 'sardine', 'mackerel', 'tuna', 'salmon')
+      }
+      else {
+        exclude.push(pattern)
+      }
+    }
+  }
 
-return {
-  intent: isDaily ? 'daily' : isCalories ? 'calories' : 'unknown',
-  diet,
-  exclude,
-  targetCalories,
+  const calorieMatch = lower.match(/(\d+)\s*(?:kcal|calories)/)
+  let targetCalories = calorieMatch ? parseInt(calorieMatch[1]) : null
+
+  // If user asks for TEE-based recommendations and we have calculated TDEE
+  if (isTEE && tdee.value !== null) {
+    targetCalories = tdee.value
+  }
+
+  return {
+    intent: isDaily ? 'daily' : isCalories ? 'calories' : 'unknown',
+    diet,
+    exclude,
+    targetCalories,
+    isTEEBased: isTEE
   }
 }
+
 
 const toggleChat = () => {
 showChat.value = !showChat.value
@@ -133,138 +172,131 @@ nextTick(() => {
 }
 
 const sendMessage = async () => {
-  const text = userInput.value.trim();
-  if (!text) return;
+  const text = userInput.value.trim()
+  if (!text) return
 
-  // Add user message and clear input
-  messages.value.push({ sender: 'user', text });
-  userInput.value = '';
+  messages.value.push({ sender: 'user', text })
+  userInput.value = ''
 
   // Show typing indicator
-  messages.value.push({ sender: 'ai', text: 'Typing...', isLoading: true });
+  messages.value.push({ sender: 'ai', text: 'Typing...', isLoading: true })
   
   try {
-    const { intent, diet, exclude, targetCalories } = parseUserInput(text);
-    let aiText = "I couldn't understand your request. Try asking for meal recommendations or specific calorie-based meals.";
+    const { intent, diet, exclude, targetCalories, isTEEBased } = parseUserInput(text)
+    let aiText = "I couldn't understand your request. Try asking for meal recommendations or specific calorie-based meals."
 
-    if (intent === 'daily') {
-      const { data } = await api.get(
-        `/ai/recommend-daily-meals?diet=${diet}&exclude=${exclude.join(',')}`
-      );
+    // Handle case where user asks for TDEE but it's not available
+    if (isTEEBased && tdee.value === null) {
+      aiText = "I couldn't calculate your daily energy needs (TDEE). Please make sure your profile information (weight, height, age, etc.) is complete."
+    }
 
-      if (data.meals?.length) {
-        aiText = `Here's your personalized ${diet || ''}${diet && exclude.length ? ', ' : ''}${exclude.length ? 'allergy-friendly' : ''} meal plan:\n\n`;
-        
-        data.meals.forEach(meal => {
-          aiText += `🍽️ ${meal.mealType.toUpperCase()}: ${meal.title}\n`;
-          aiText += `⏱️ Ready in: ${meal.readyInMinutes || 'N/A'} mins\n`;
-          
-          // Nutrition information
-          if (meal.nutrition) {
-            aiText += `📊 Nutrition per serving:\n`;
-            aiText += `• Calories: ${meal.nutrition.calories || 'N/A'} kcal\n`;
-            aiText += `• Protein: ${meal.nutrition.protein || 'N/A'}g\n`;
-            aiText += `• Carbs: ${meal.nutrition.carbohydrates || 'N/A'}g\n`;
-            aiText += `• Fat: ${meal.nutrition.fat || 'N/A'}g\n`;
-          } else {
-            aiText += `📊 Nutrition information not available\n`;
-          }
-          
-          aiText += `🔗 Recipe: ${meal.link}\n\n`;
-        });
-      } else {
-        aiText = "I couldn't find meals matching your requirements. Try being less specific or check back later.";
-      }
-    } else if (intent === 'calories' && targetCalories) {
-      const { data } = await api.post('/ai/recommend-by-calories', {
-        targetCalories,
+    // Handle calorie-based requests (either specific number or TDEE)
+    else if ((intent === 'calories' && targetCalories) || isTEEBased) {
+      const caloriesToUse = isTEEBased ? tdee.value : targetCalories
+      const targetURL = isTEEBased ? '/ai/recommend-by-calories' : '/ai/meals-by-calories'
+      const { data } = await api.post(targetURL, {
+        targetCalories: caloriesToUse,
         diet,
         exclude: exclude.join(','),
-      });
+      })
 
       if (data.meals?.length) {
-        aiText = `Here's a ${data.targetCalories} kcal meal plan:\n\n`;
+        aiText = isTEEBased ? `Here's a ${caloriesToUse} kcal meal plan based on your TDEE \n\n` : `Here are some meals around ${caloriesToUse} kcal\n\n`
+
         data.meals.forEach(meal => {
-          aiText += `🍽️ ${meal.title}\n`;
-          aiText += `⏱️ Ready in: ${meal.readyInMinutes || 'N/A'} mins\n`;
+          aiText += `🍽️ ${meal.title}\n`
+          aiText += `⏱️ Ready in: ${meal.readyInMinutes || 'N/A'} mins\n`
           
           if (meal.nutrition) {
-            aiText += `📊 Nutrition per serving:\n`;
-            aiText += `• Calories: ${meal.nutrition.calories || 'N/A'} kcal\n`;
-            aiText += `• Protein: ${meal.nutrition.protein || 'N/A'}g\n`;
-            aiText += `• Carbs: ${meal.nutrition.carbohydrates || 'N/A'}g\n`;
-            aiText += `• Fat: ${meal.nutrition.fat || 'N/A'}g\n`;
+            aiText += `📊 Nutrition per serving:\n`
+            aiText += `• Calories: ${meal.nutrition.calories || 'N/A'} kcal\n`
+            aiText += `• Protein: ${meal.nutrition.protein || 'N/A'}\n`
+            aiText += `• Carbs: ${meal.nutrition.carbohydrates || 'N/A'}\n`
+            aiText += `• Fat: ${meal.nutrition.fat || 'N/A'}\n`
           }
           
-          aiText += `🔗 Recipe: ${meal.link}\n\n`;
-        });
+          aiText += `🔗 Recipe: ${meal.link}\n\n`
+        })
         
-        if (data.nutrients) {
-          aiText += `📈 Daily totals:\n`;
-          aiText += `• Calories: ${data.nutrients.calories || 'N/A'} kcal\n`;
-          aiText += `• Protein: ${data.nutrients.protein || 'N/A'}g\n`;
-          aiText += `• Carbs: ${data.nutrients.carbohydrates || 'N/A'}g\n`;
-          aiText += `• Fat: ${data.nutrients.fat || 'N/A'}g\n\n`;
+        if (data.nutrients && (isTEEBased || intent === 'daily')) {
+          aiText += `📈 Daily totals:\n`
+          aiText += `• Calories: ${data.nutrients.calories || 'N/A'} kcal\n`
+          aiText += `• Protein: ${data.nutrients.protein || 'N/A'}g\n`
+          aiText += `• Carbs: ${data.nutrients.carbohydrates || 'N/A'}g\n`
+          aiText += `• Fat: ${data.nutrients.fat || 'N/A'}g\n\n`
         }
       } else {
-        aiText = `I couldn't find meals around ${targetCalories} calories. Try a different calorie amount.`;
+        aiText = `I couldn't find meals around ${caloriesToUse} calories. Try a different calorie amount.`
+      }
+    }
+    // Handle daily requests without specific calories
+    else if (intent === 'daily') {
+      const { data } = await api.get(
+        `/ai/recommend-daily-meals?diet=${diet}&exclude=${exclude.join(',')}`
+      )
+
+      if (data.meals?.length) {
+        aiText = `Here's your personalized ${diet || ''}${diet && exclude.length ? ', ' : ''}${exclude.length ? 'allergy-friendly' : ''} meal plan:\n\n`
+        
+        data.meals.forEach(meal => {
+          aiText += `🍽️ ${meal.mealType.toUpperCase()}: ${meal.title}\n`
+          aiText += `⏱️ Ready in: ${meal.readyInMinutes || 'N/A'} mins\n`
+          
+          if (meal.nutrition) {
+            aiText += `📊 Nutrition per serving:\n`
+            aiText += `• Calories: ${meal.nutrition.calories || 'N/A'} kcal\n`
+            aiText += `• Protein: ${meal.nutrition.protein || 'N/A'}\n`
+            aiText += `• Carbs: ${meal.nutrition.carbohydrates || 'N/A'}\n`
+            aiText += `• Fat: ${meal.nutrition.fat || 'N/A'}\n`
+          } else {
+            aiText += `📊 Nutrition information not available\n`
+          }
+          
+          aiText += `🔗 Recipe: ${meal.link}\n\n`
+        })
+      } else {
+        aiText = "I couldn't find meals matching your requirements. Try being less specific or check back later."
       }
     }
 
-    // Remove typing indicator and add actual response
-    messages.value = messages.value.filter(msg => !msg.isLoading);
-    messages.value.push({ sender: 'ai', text: aiText });
+    // Remove typing indicator and add response
+    messages.value = messages.value.filter(msg => !msg.isLoading)
+    messages.value.push({ sender: 'ai', text: aiText })
     
   } catch (error) {
-    console.error('API Error:', error);
+    console.error('API Error:', error)
+    messages.value = messages.value.filter(msg => !msg.isLoading)
     
-    // Remove typing indicator
-    messages.value = messages.value.filter(msg => !msg.isLoading);
-    
-    let errorMessage = 'Sorry, I encountered an error. Please try again later.';
-    
+    let errorMessage = 'Sorry, I encountered an error. Please try again later.'
     if (error.response) {
       if (error.response.status === 429) {
-        errorMessage = "I'm getting too many requests right now. Please wait a minute and try again.";
+        errorMessage = "I'm getting too many requests. Please wait a minute and try again."
       } else if (error.response.status === 404) {
-        errorMessage = "I couldn't find any matching recipes. Try different requirements.";
+        errorMessage = "I couldn't find matching recipes. Try different requirements."
       }
     }
     
-    messages.value.push({ sender: 'ai', text: errorMessage });
+    messages.value.push({ sender: 'ai', text: errorMessage })
   } finally {
-    scrollToBottom();
+    scrollToBottom()
   }
-};
-
-const scrollToBottom = () => {
-nextTick(() => {
-  const el = chatMessages.value
-  if (el) el.scrollTop = el.scrollHeight
-})
 }
 
-
 onMounted(async () => {
+  try {
     const token = localStorage.getItem("token")
-    const response = await api.get("/users/user-data",{
-        headers : {
-            Authorization : `Bearer ${token}`
-        }
-    })
-
-    userData.value = response.data.user
-
-    tee.value = calculateTDEE(userData.value)
-  })
+    if (token) {
+      const response = await api.get("/users/user-data", {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      userData.value = response.data.user
+      tdee.value = calculateTDEE(userData.value)
+      console.log('User data loaded:', userData.value)
+      console.log('Calculated TDEE:', tdee.value)
+    }
+  } catch (error) {
+    console.error("Failed to fetch user data:", error)
+  }
+})
 </script>
-  
-  <style scoped>
-  .fade-enter-active, .fade-leave-active {
-    transition: opacity 0.3s ease;
-  }
-  .fade-enter-from, .fade-leave-to {
-    opacity: 0;
-  }
-  </style>
-  
+

@@ -71,7 +71,7 @@ router.get("/recommend-daily-meals", async (req, res) => {
 router.post("/recommend-by-calories", async (req, res) => {
   try {
     const { targetCalories, diet, exclude } = req.body;
-
+    
     const response = await axios.get(
       "https://api.spoonacular.com/mealplanner/generate",
       {
@@ -139,6 +139,59 @@ router.post("/recommend-by-calories", async (req, res) => {
     res.status(500).json({ 
       error: "Could not recommend food based on calories",
       details: error.response?.data?.message || error.message 
+    });
+  }
+});
+
+router.post("/meals-by-calories", async (req, res) => {
+  try {
+    const { targetCalories, diet = "", exclude = "" } = req.body;
+    const minCalories = targetCalories - 100;
+    const maxCalories = targetCalories + 100;
+
+    const searchParams = {
+      minCalories,
+      maxCalories,
+      number: 5,
+      diet,
+      excludeIngredients: exclude,
+      addRecipeInformation: true,
+      addRecipeNutrition: true,
+      apiKey: process.env.SPOONACULAR_API_KEY,
+    };
+
+    const response = await axios.get(
+      "https://api.spoonacular.com/recipes/complexSearch",
+      { params: searchParams }
+    );
+
+    const enrichedMeals = await Promise.all(
+      response.data.results.map(async (recipe) => {
+        const nutritionResp = await axios.get(
+          `https://api.spoonacular.com/recipes/${recipe.id}/nutritionWidget.json`,
+          { params: { apiKey: process.env.SPOONACULAR_API_KEY } }
+        );
+
+        return {
+          title: recipe.title,
+          link: `https://spoonacular.com/recipes/${recipe.title.replace(/ /g, "-")}-${recipe.id}`,
+          readyInMinutes: recipe.readyInMinutes,
+          nutrition: {
+            calories: nutritionResp.data.calories || "N/A",
+            carbs: nutritionResp.data.carbs || "N/A",
+            protein: nutritionResp.data.protein || "N/A",
+            fat: nutritionResp.data.fat || "N/A",
+          },
+        };
+      })
+    );
+
+    res.json({ meals: enrichedMeals });
+  } catch (error) {
+    console.error("Error fetching meals by calories:", error);
+    res.status(500).json({
+      error: "Could not fetch meals around specified calories",
+      details: error.response?.data?.message || error.message,
     });
   }
 });

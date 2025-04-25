@@ -1,121 +1,112 @@
 <script setup>
-import { RouterLink } from 'vue-router';
 import { useTypingText } from '@/composables/useTypingText';
-import { ref, onMounted, onUnmounted,nextTick } from 'vue';
-import 'primeicons/primeicons.css';
-// import AICamera from '@/controllers/aiCamera';
+import { ref, onUnmounted } from 'vue';
+import { initCamera, loadModel, detectPose } from '@/controllers/aiCamera';
+
+const title = useTypingText("Check your Workout Form, Avoid Injury");
+const title2 = useTypingText("Open Camera to Check your workout Form");
+
 const desc1 = useTypingText("Monitor your posture during workouts using AI Camera for more precise and effective results.");
 const desc2 = useTypingText("Get automatic alerts for incorrect movements, preventing injury risks during your exercise routine.");
 const desc3 = useTypingText("AI technology helps improve your workout form automatically by analyzing camera movement data.");
 const desc4 = useTypingText("Enhance your workouts with AI support to achieve quicker, more effective results and improvements.");
 const desc5 = useTypingText("Maximize your workout efficiency with real-time movement analysis to save time and improve technique.");
 const desc6 = useTypingText("Track your workout progress and technique improvements over time, ensuring consistent growth and development.");
-const title = useTypingText("Check your Workout Form, Avoid Injury");
-const title2 = useTypingText("Open Camera to Check your workout Form");
-
-const showScrollTop = ref(false);
 const videoElement = ref(null);
-const isCameraOn = ref(false);  // Declare camera state
-let aiCamera = ref(null);
-const analysisResult = ref(null);
-const selectedExercise = ref('squat'); // Default exercise
+const isCameraOn = ref(false);
+const detected = ref('None');
+const squatCount = ref(0);
+const pushupCount = ref(0);
+const feedbackMessage = ref('');
 
-const toggleCamera = async () => {
-  if (isCameraOn.value) {
-    stopCamera();
-  } else {
-    await startCamera();
-  }
-  isCameraOn.value = !isCameraOn.value;
-};
+let animationFrameId;
 
 const startCamera = async () => {
   try {
-    await nextTick(); // Ensure DOM is updated
-    console.log("Video ref value:", videoElement.value);
-    console.log("Instance of HTMLVideoElement:", videoElement.value instanceof HTMLVideoElement);
-
-    // Ensure that the video element is correctly passed
-    const video = videoElement.value;
-    if (!video || !(video instanceof HTMLVideoElement)) {
-      throw new Error("Video element is not a valid HTMLVideoElement");
-    }
-
-    // Set up AI Camera
-    aiCamera.value = new AICamera(video, analyzePose);
-    await aiCamera.value.start();
-    analysisResult.value = null;
+    await loadModel();
+    await initCamera(videoElement.value);
+    isCameraOn.value = true;
+    
+    const loop = async () => {
+      await detectPose(videoElement.value, (result) => {
+        detected.value = result.detected;
+        squatCount.value = result.squatCounter;
+        pushupCount.value = result.pushupCounter;
+        feedbackMessage.value = result.feedback || '';
+      });
+      animationFrameId = requestAnimationFrame(loop);
+    };
+    
+    loop();
   } catch (error) {
-    console.error('Error starting camera:', error);
-    isCameraOn.value = false;
+    console.error("Error starting camera:", error);
+    feedbackMessage.value = "Error accessing camera. Please check permissions.";
   }
 };
+
 const stopCamera = () => {
-  if (aiCamera.value) {
-    aiCamera.value.stop();
-    aiCamera.value = null;
+  if (videoElement.value && videoElement.value.srcObject) {
+    videoElement.value.srcObject.getTracks().forEach(track => track.stop());
+    videoElement.value.srcObject = null;
+  }
+  isCameraOn.value = false;
+  if (animationFrameId) {
+    cancelAnimationFrame(animationFrameId);
   }
 };
 
-const analyzePose = async (keypoints) => {
-  try {
-    // Use selected exercise (either 'pushup' or 'squat') to send to the correct backend endpoint
-    const endpoint = selectedExercise.value === 'pushup' 
-      ? '/analyze-pushup' 
-      : '/analyze-squat';
-    
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ keypoints }),
-    });
-    
-    const data = await response.json();
-    analysisResult.value = data;
-  } catch (error) {
-    console.error('Error analyzing pose:', error);
+const toggleCamera = () => {
+  if (isCameraOn.value) {
+    stopCamera();
+  } else {
+    startCamera();
   }
 };
+
 onUnmounted(() => {
   stopCamera();
 });
-
-
-const handleScroll = () => {
-  showScrollTop.value = window.scrollY > 300
-}
-
-const scrollToTop = () => {
-  window.scrollTo({ top: 0, behavior: 'smooth' })
-}
-
-onMounted(() => {
-  window.addEventListener('scroll', handleScroll)
-})
-
 </script>
+
 
 <template>
   <div class="bg-gray-200">
-    <div class="hero-section min-h-screen flex items-center justify-center text-white text-center">
-      <div class="bg-black bg-opacity-60 p-6 rounded-xl max-w-xl">
+    <div class="hero-section min-h-screen flex items-center justify-center text-white text-center px-4">
+      <div class="flex flex-col items-center justify-center p-4 rounded-lg bg-black">
         <h1 class="text-3xl font-bold mb-4">{{ title }}</h1>
         <p class="text-md mb-5">{{ title2 }}</p>
         <div class="bg-green-600 p-2 rounded-md hover:bg-green-400 inline-block mb-4">
-          <button @click="toggleCamera" class="text-white font-semibold">
-            {{ isCameraOn ? '>> Stop Ai Camera <<' : '>> Open Ai Camera <<' }}
+          <button @click="toggleCamera" class="px-6 py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700">
+            {{ isCameraOn ? 'Stop Camera' : 'Start Camera' }}
           </button>
         </div>
-        <video ref="videoElement" autoplay muted playsinline
-          class="mx-auto my-6 w-full max-w-lg rounded-lg shadow-lg">
-          <div v-if="analysisResult">
-            <p>{{ analysisResult.status }}</p> <!-- Show feedback from backend -->
-          </div>
+        <video ref="videoElement" autoplay playsinline
+          class="mx-auto w-full max-w-lg aspect-video rounded-lg shadow-lg">
         </video>
+        <p><strong>Detected:</strong> {{ detected }}</p>
+        <p><strong>Squat Count:</strong> {{ squatCount }}</p>
+        <p><strong>Push-up Count:</strong> {{ pushupCount }}</p>
+        <p v-if="feedbackMessage" class="text-yellow-300 mt-2">{{ feedbackMessage }}</p>
       </div>
+      <!-- <div class="flex flex-col items-center justify-center bg-black bg-opacity-60 p-6 rounded-xl max-w-xl w-full my-2"> 
+        <h1 class="text-3xl font-bold mb-4">{{ title }}</h1>
+        <p class="text-md mb-5">{{ title2 }}</p>
+        <div class="bg-green-600 p-2 rounded-md hover:bg-green-400 inline-block mb-4">
+          <button @click="toggleCamera" class="px-6 py-3 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700">
+            {{ isCameraOn ? 'Stop Camera' : 'Start Camera' }}
+          </button>
+        </div>
+        <video ref="videoElement" autoplay playsinline
+          class="mx-auto my-6 w-full max-w-lg rounded-lg shadow-lg"></video>
+        <div class="mt-6 text-left text-sm text-gray-100 p-4 bg-black bg-opacity-40 rounded-lg">
+          <p><strong>Detected:</strong> {{ detected }}</p>
+          <p><strong>Squat Count:</strong> {{ squatCount }}</p>
+          <p><strong>Push-up Count:</strong> {{ pushupCount }}</p>
+          <p v-if="feedbackMessage" class="text-yellow-300 mt-2">{{ feedbackMessage }}</p>
+        </div>
+      </div> -->
     </div>
+
 
     <!-- Experience of AI Camera Section -->
     <section class="py-16 px-6 text-center">
@@ -268,7 +259,7 @@ onMounted(() => {
       </div>
     </section>
     <!-- Scroll to Top Button -->
-    <button @click="scrollToTop" v-show="showScrollTop"
+    <button @click="scrollToTop" 
       class="fixed bottom-6 right-6 bg-gray-600 text-white p-3 rounded-full shadow-lg hover:bg-green-500 transition duration-300 z-50">
       <i class="pi pi-arrow-up text-xxl"></i>
     </button>
@@ -277,32 +268,31 @@ onMounted(() => {
 </template>
 
 <style>
-/* Slideshow background */
 .hero-section {
   background-size: cover;
   background-position: center;
   animation: slideshow 10s infinite ease-in-out;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.hero-section img {
-  object-fit: cover;
-  opacity: 0.4;
-  /* Adjust the transparency */
-}
-
+/* .bg-black.bg-opacity-60 {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+} */
 @keyframes slideshow {
   15% {
     background-image: url('./../assets/form1.jpg');
   }
-
   33% {
     background-image: url('./../assets/form2.jpg');
   }
-
   66% {
     background-image: url('./../assets/form3.jpg');
   }
-
   100% {
     background-image: url('./../assets/form4.jpg');
   }
