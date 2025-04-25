@@ -58,13 +58,13 @@ CREATE TABLE if not exists `users` (
 ```
 
 ## SETUP INSTRUCTIONS
-### :one Clone the Repository
+### 1️⃣ Clone the Repository
 ```sh
 git clone https://github.com/LordJmw/Projek_AI
 cd Projek_AI
 ```
 
-### :two Install Dependencies
+### 2️⃣ Install Dependencies
 #### For Backend
 ```sh
 cd personal-trainer-ai-backend
@@ -77,7 +77,7 @@ cd ../personal-trainer-ai
 npm install
 ```
 
-### :three Set Up The Environment Variables
+### 3️⃣ Set Up The Environment Variables
 create a .env file in both folder to configure it properly
 For the Backend (/personal-trainer-ai-backend/.env):
 ```sh
@@ -99,7 +99,7 @@ For the FrontEnd (/personal-trainer-ai/.env):
 VITE_API_URL=http://localhost:3000
 ```
 
-### :four Start the Project
+### 4️⃣ Start the Project
 Start the Backend
 ```sh
 cd personal-trainer-ai-backend
