@@ -15,6 +15,13 @@ The Fifth Sense:
 - Nailah Assyifa (231112334)
 - Wilmer Tanton (231112849)
 
+## Table of Contents
+- [Prerequisites](#book-prerequisites)
+- [Database Setup](#database-setup)
+- [Setup Instructions](#setup-instructions)
+- [Chatbot Input Format](#chatbot-input-format)
+- [Troubleshooting](#troubleshooting)
+
 ### :book: Prerequisites
 - **Node.js** (make sure Node.js is installed, at least version 14.x or higher)
 - **MySQL** (for the backend)
@@ -77,8 +84,8 @@ cd ../personal-trainer-ai
 npm install
 ```
 
-### 3️⃣ Set Up The Environment Variables
-create a .env file in both folder to configure it properly
+### :three Set Up The Environment Variables
+create a .env file in both folders to configure it properly
 For the Backend (/personal-trainer-ai-backend/.env):
 ```sh
 DB_NAME=yourdatabase
@@ -88,7 +95,7 @@ DB_PORT=3306
 DB_PASS=yourpassword
 DB_HOST=localhost
 DB_DIALECT=mysql
-SPOONACULAR_API_KEY=yourspooancularapikey
+SPOONACULAR_API_KEY=yourspoonacularapikey
 JWT_SECRET=yourjwtsecret
 REPLICATE_API_TOKEN=yourreplicateapikey
 HUGGINGFACE_API_KEY=yourhuggingfaceapikey
@@ -110,6 +117,30 @@ Start The Front End
 ```sh
 cd ../personal-trainer-ai
 npm run dev
+```
+
+### CHATBOT Input Format
+While using the chatbot, make sure your input has the word:
+- **daily**, if you want the chatbox to recommend daily food for you
+```sh
+recommend daily food for me
+```
+you can also add TEE(Total Energy Expenditure) if you want the chatbox to recommend daily food based on that
+```sh
+recommend daily food for me based on my tee
+```
+you can also include your diet type(vegan,keto,etc) and your allergies(fish,shrimp,etc)
+```sh
+recommend daily food for me i'm allergic to fish
+recommend daily food for me i'm keto
+```
+- **Calories** if you want to know some food around x calories
+```sh
+tell me some food around 250 calories
+```
+same as the one above, you can add your diet type and your allergic
+```sh
+tell me some food around 250 calories and i'm allergic to nut
 ```
 
 ### TroubleShooting
