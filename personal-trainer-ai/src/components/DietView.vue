@@ -59,7 +59,8 @@ const toggleInput = (id) => {
 const getActivityMultiplier = (activityLevel) => {
     switch (activityLevel) {
         case 'Little/No Activity': return 1.2
-        case 'Moderately Active': return 1.55
+        case 'A Little Active': return 1.375
+        case 'Moderately Active' : return 1.55 
         case 'Very Active': return 1.725
         default: return 1.2
     }
@@ -78,9 +79,9 @@ const calculateTDEE = (user) => {
 
     let bmr = 0
     if (gender === 'm') {
-        bmr = 10 * weight + 6.25 * height - 5 * age + 5
+        bmr = (10 * weight) + (6.25 * height) - (5 * age) + 5
     } else {
-        bmr = 10 * weight + 6.25 * height - 5 * age - 161
+        bmr = (10 * weight) + (6.25 * height) - (5 * age) - 161
     }
 
     if (goal === "cut") {
@@ -198,6 +199,7 @@ const kurangiKalori = async (id, meal_type) => {
 
 onMounted(async () => {
     const token = localStorage.getItem("token")
+    console.log(token)
     const response = await api.get("/users/user-data",{
         headers : {
             Authorization : `Bearer ${token}`

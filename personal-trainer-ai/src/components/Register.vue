@@ -30,7 +30,7 @@ const Toast = useToast()
 const activity_categories = [
     {
         value : "Little/No Activity",
-        label : "Little/No Avitivity",
+        label : "Little/No Activity",
         description : "Daily Activity that requires litte energy like office job or driving"
     },
     {
