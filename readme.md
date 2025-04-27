@@ -119,6 +119,9 @@ cd ../personal-trainer-ai
 npm run dev
 ```
 
+Front End wil run on:
+- htpp://localhost:5173
+
 ### CHATBOT Input Format
 While using the chatbot, make sure your input has the word:
 - **daily**, if you want the chatbox to recommend daily food for you
