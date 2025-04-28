@@ -253,10 +253,10 @@ const deleteMeal = async (mealId, mealType) => {
                     <TextTyping />
                 </div>
 
-                <div class='flex gap-3 items-center'>
+                <!-- <div class='flex gap-3 items-center'>
                     <search />
                     <notificationF />
-                </div>
+                </div> -->
             </nav>
             <div>
                 <calender />

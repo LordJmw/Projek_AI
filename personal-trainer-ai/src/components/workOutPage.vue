@@ -2,7 +2,7 @@
 import { useTypingText } from '@/composables/useTypingText';
 import { ref, onUnmounted } from 'vue';
 import { initCamera, loadModel, detectPose,resetWorkoutState } from '@/controllers/aiCamera';
-
+import 'primeicons/primeicons.css'
 const title = useTypingText("Check your Workout Form, Avoid Injury");
 const title2 = useTypingText("Open Camera to Check your workout Form");
 
@@ -206,7 +206,7 @@ onUnmounted(() => {
           </div>
 
           <!-- Tombol Learn More -->
-          <RouterLink to="/"
+          <RouterLink to="/diet"
             class="absolute bottom-10 right-10 bg-opacity-10 px-5 py-2 rounded-lg text-2xl text-white italic font-bold hover:underline hover:bg-opacity-20 transition duration-300 text-center">
             BMI Page >
             <i class="pi pi-arrow-right text-white"></i>
@@ -238,7 +238,7 @@ onUnmounted(() => {
 
 
           <!-- Tombol Learn More (Nutrition) -->
-          <RouterLink to="/home"
+          <RouterLink to="/diet"
             class="absolute bottom-10 right-10 bg-opacity-10 px-5 py-2 rounded-lg text-2xl text-white italic font-bold hover:underline hover:bg-opacity-20 transition duration-300 text-center">
             Diet Page >
           </RouterLink>
